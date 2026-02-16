@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Movie Recommender - Find Your Next Favorite Film</title>
+    <link rel="stylesheet" href="styles.css?v=20250101">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">🎬 Movie Recommender</h1>
+                <nav class="nav">
+                    <button class="nav-btn active" data-page="home">Home</button>
+                    <button class="nav-btn" data-page="search">Search</button>
+                    <button class="nav-btn" data-page="genres">Genres</button>
+                    <button class="nav-btn" data-page="watchlist" id="nav-watchlist" style="display:none;">Watchlist</button>
+                </nav>
+                <div class="header-actions">
+                    <div id="auth-area">
+                        <button id="login-btn" class="btn btn-sm btn-primary">Login</button>
+                    </div>
+                    <div id="user-area" style="display:none;">
+                        <span id="user-greeting" class="user-greeting"></span>
+                        <button id="logout-btn" class="btn btn-sm btn-secondary">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+
+            <!-- Home Page -->
+            <section id="home-page" class="page active">
+                <div class="hero">
+                    <h2 class="hero-title">Discover Your Next Favorite Movie</h2>
+                    <p class="hero-subtitle">Powered by AI-driven content-based &amp; hybrid recommendations</p>
+                    <div class="quick-search">
+                        <input type="text" id="quick-search-input" class="search-input" placeholder="Search for a movie...">
+                        <button id="quick-search-btn" class="btn btn-primary">🔍 Search</button>
+                    </div>
+                </div>
+
+                <!-- Because You Liked -->
+                <section id="because-you-liked-section" class="section" style="display:none;">
+                    <h2 class="section-title" id="because-you-liked-title">✨ Because You Liked ...</h2>
+                    <div id="because-you-liked-movies" class="movie-grid"></div>
+                </section>
+
+                <!-- Popular Movies -->
+                <section class="section">
+                    <h2 class="section-title">🔥 Popular Movies</h2>
+                    <div id="popular-movies" class="movie-grid">
+                        <div class="loading"><div class="spinner"></div>Loading popular movies...</div>
+                    </div>
+                    <button id="load-more-popular" class="btn btn-secondary load-more-btn" style="display:none;">Load More</button>
+                </section>
+
+                <!-- Top Rated Movies -->
+                <section class="section">
+                    <h2 class="section-title">⭐ Top Rated Movies</h2>
+                    <div id="top-rated-movies" class="movie-grid">
+                        <div class="loading"><div class="spinner"></div>Loading top rated movies...</div>
+                    </div>
+                    <button id="load-more-top-rated" class="btn btn-secondary load-more-btn" style="display:none;">Load More</button>
+                </section>
+            </section>
+
+            <!-- Search Page -->
+            <section id="search-page" class="page">
+                <div class="search-header">
+                    <h2>🔍 Search Movies</h2>
+                    <div class="search-box">
+                        <input type="text" id="search-input" class="search-input" placeholder="Enter movie title...">
+                        <button id="search-btn" class="btn btn-primary">Search</button>
+                    </div>
+                    <div id="search-result-count" class="result-count"></div>
+                </div>
+                <div id="search-results" class="movie-grid">
+                    <p class="empty-state">Enter a movie title to search</p>
+                </div>
+                <button id="load-more-search" class="btn btn-secondary load-more-btn" style="display:none;">Load More</button>
+            </section>
+
+            <!-- Genres Page (with advanced filters) -->
+            <section id="genres-page" class="page">
+                <h2 class="section-title">🎭 Movie Categories</h2>
+                <div id="genre-list" class="genre-grid">
+                    <div class="loading"><div class="spinner"></div>Loading genres...</div>
+                </div>
+
+                <!-- Advanced Filters -->
+                <div class="filter-panel" id="filter-panel">
+                    <div class="filter-header" id="filter-toggle">
+                        <h3><span class="filter-icon">⚙️</span> Advanced Filters</h3>
+                        <span class="filter-chevron open" id="filter-chevron">▼</span>
+                    </div>
+                    <div class="filter-body open" id="filter-body">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label class="filter-label">⭐ Rating Range</label>
+                                <div class="filter-rating-inputs">
+                                    <input type="number" id="filter-min-rating" class="filter-input" placeholder="Min" min="0" max="10" step="0.5" value="0">
+                                    <span class="filter-separator">to</span>
+                                    <input type="number" id="filter-max-rating" class="filter-input" placeholder="Max" min="0" max="10" step="0.5" value="10">
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">📅 Year Range</label>
+                                <div class="filter-rating-inputs">
+                                    <input type="number" id="filter-year-from" class="filter-input" placeholder="From" min="1900" max="2030">
+                                    <span class="filter-separator">to</span>
+                                    <input type="number" id="filter-year-to" class="filter-input" placeholder="To" min="1900" max="2030">
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">⏱️ Runtime (min)</label>
+                                <div class="filter-rating-inputs">
+                                    <input type="number" id="filter-min-runtime" class="filter-input" placeholder="Min">
+                                    <span class="filter-separator">to</span>
+                                    <input type="number" id="filter-max-runtime" class="filter-input" placeholder="Max">
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">📊 Sort By</label>
+                                <select id="filter-sort-by" class="filter-select">
+                                    <option value="popularity">Popularity</option>
+                                    <option value="rating">Rating</option>
+                                    <option value="release_date">Release Date</option>
+                                    <option value="revenue">Revenue</option>
+                                    <option value="title">Title</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">🔃 Order</label>
+                                <select id="filter-order" class="filter-select">
+                                    <option value="desc">Descending</option>
+                                    <option value="asc">Ascending</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="apply-filters-btn" class="btn btn-primary btn-sm">🔍 Apply Filters</button>
+                            <button id="reset-filters-btn" class="btn btn-secondary btn-sm">↺ Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="genre-section-title" class="genre-section-title"></div>
+                <div id="genre-movies" class="movie-grid"></div>
+                <button id="load-more-genre" class="btn btn-secondary load-more-btn" style="display:none;">Load More</button>
+            </section>
+
+            <!-- Watchlist Page -->
+            <section id="watchlist-page" class="page">
+                <h2 class="section-title">📋 My Watchlist</h2>
+                <div id="watchlist-movies" class="movie-grid">
+                    <p class="empty-state">Your watchlist is empty. Click the ❤️ on a movie to save it!</p>
+                </div>
+            </section>
+
+            <!-- Movie Details Modal -->
+            <div id="movie-modal" class="modal">
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <button class="modal-close">&times;</button>
+                    <div id="movie-details" class="movie-details"></div>
+
+                    <!-- Trailer Section -->
+                    <div id="trailer-section" class="trailer-section" style="display:none;">
+                        <h3 class="section-title">🎥 Trailer</h3>
+                        <div class="trailer-wrapper">
+                            <iframe id="trailer-iframe" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations Section -->
+                    <div class="recommendations-section">
+                        <h3 class="section-title">✨ Similar Movies You Might Like</h3>
+                        <div id="recommendations-grid" class="movie-grid">
+                            <div class="loading">Loading recommendations...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auth Modal -->
+            <div id="auth-modal" class="modal">
+                <div class="modal-overlay auth-overlay"></div>
+                <div class="auth-modal-content">
+                    <button class="auth-close-btn" id="auth-close-btn">&times;</button>
+                    <div class="auth-brand">
+                        <span class="auth-logo">🎬</span>
+                        <h2 class="auth-title">Welcome to Movie Recommender</h2>
+                        <p class="auth-subtitle">Sign in to unlock your personalized experience</p>
+                    </div>
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">Login</button>
+                        <button class="auth-tab" data-tab="register">Register</button>
+                    </div>
+                    <form id="login-form" class="auth-form">
+                        <div class="auth-input-group">
+                            <span class="auth-input-icon">👤</span>
+                            <input type="text" id="login-username" placeholder="Username" required>
+                        </div>
+                        <div class="auth-input-group">
+                            <span class="auth-input-icon">🔒</span>
+                            <input type="password" id="login-password" placeholder="Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary auth-submit-btn">Sign In</button>
+                        <p id="login-error" class="auth-error"></p>
+                    </form>
+                    <form id="register-form" class="auth-form" style="display:none;">
+                        <div class="auth-input-group">
+                            <span class="auth-input-icon">👤</span>
+                            <input type="text" id="reg-username" placeholder="Username" required>
+                        </div>
+                        <div class="auth-input-group">
+                            <span class="auth-input-icon">📧</span>
+                            <input type="email" id="reg-email" placeholder="Email" required>
+                        </div>
+                        <div class="auth-input-group">
+                            <span class="auth-input-icon">🔒</span>
+                            <input type="password" id="reg-password" placeholder="Password (min 4 chars)" required minlength="4">
+                        </div>
+                        <button type="submit" class="btn btn-primary auth-submit-btn">Create Account</button>
+                        <p id="reg-error" class="auth-error"></p>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 MovieRecommender. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="app.js?v=20250101"></script>
+    <button id="scroll-top-btn" class="scroll-top-btn" title="Back to top">↑</button>
+</body>
+</html>
