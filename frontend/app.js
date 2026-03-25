@@ -1,6 +1,9 @@
 // ==================== CONFIGURATION ====================
 const API_BASE_URL = 'http://localhost:5000/api';
 
+// Inline SVG placeholder (works offline / behind firewalls)
+const PLACEHOLDER_POSTER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect width='200' height='300' fill='%231a1a1a'/%3E%3Ctext x='100' y='140' text-anchor='middle' fill='%23666' font-family='Arial' font-size='14'%3ENo Poster%3C/text%3E%3Ctext x='100' y='165' text-anchor='middle' fill='%23555' font-family='Arial' font-size='30'%3E🎬%3C/text%3E%3C/svg%3E";
+
 const GENRE_ICONS = {
     'Action': '💥', 'Adventure': '🏴‍☠️', 'Animation': '🎬', 'Comedy': '😂',
     'Crime': '🔫', 'Documentary': '🎥', 'Drama': '🎭', 'Family': '👨‍👩‍👧‍👦',
@@ -338,7 +341,7 @@ function cardClickHandler(e) {
 }
 
 function createMovieCard(movie) {
-    const poster = movie.poster_url || 'https://via.placeholder.com/200x300/1a1a1a/ffffff?text=No+Poster';
+    const poster = movie.poster_url || PLACEHOLDER_POSTER;
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
     const genres = movie.genres ? (typeof movie.genres === 'string' ? movie.genres.split(',').slice(0, 2).map(g => g.trim()).join(', ') : '') : '';
     const similarity = movie.similarity_score ? `<div class="similarity-badge">${movie.similarity_score}% Match</div>` : '';
@@ -348,7 +351,7 @@ function createMovieCard(movie) {
     return `
         <div class="movie-card" data-movie-id="${movie.id}">
             <img src="${poster}" alt="${movie.title}" class="movie-poster" loading="lazy"
-                 onerror="this.src='https://via.placeholder.com/200x300/1a1a1a/ffffff?text=No+Poster'">
+                 onerror="this.onerror=null; this.src=PLACEHOLDER_POSTER; this.classList.add('poster-fallback');">
             <div class="movie-info">
                 <h3 class="movie-title">${movie.title}</h3>
                 <div class="movie-meta">
@@ -382,8 +385,20 @@ async function showMovieDetails(movieId) {
             displayMovieDetails(detData.movie, details);
             // Show trailer if available
             if (detData.movie.trailer_url) {
-                document.getElementById('trailer-iframe').src = detData.movie.trailer_url;
+                const iframe = document.getElementById('trailer-iframe');
+                iframe.onerror = () => {
+                    trailerSection.innerHTML = '<p class="trailer-blocked">⚠️ Trailer could not be loaded. Your network may be blocking YouTube.</p>';
+                };
+                iframe.src = detData.movie.trailer_url;
                 trailerSection.style.display = 'block';
+                // Detect if iframe fails to load (blocked by firewall)
+                setTimeout(() => {
+                    try {
+                        if (iframe.contentDocument && iframe.contentDocument.body && iframe.contentDocument.body.innerHTML === '') {
+                            trailerSection.innerHTML = '<h3 class="section-title">🎥 Trailer</h3><p class="trailer-blocked">⚠️ Trailer could not be loaded. Your network may be blocking YouTube.</p>';
+                        }
+                    } catch(e) { /* cross-origin - iframe loaded something, which is fine */ }
+                }, 5000);
             }
         }
 
@@ -397,7 +412,7 @@ async function showMovieDetails(movieId) {
 }
 
 function displayMovieDetails(movie, container) {
-    const poster = movie.poster_url || 'https://via.placeholder.com/300x450/1a1a1a/ffffff?text=No+Poster';
+    const poster = movie.poster_url || PLACEHOLDER_POSTER;
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
     const runtime = movie.runtime ? `${movie.runtime} min` : 'N/A';
     const budget = movie.budget ? `$${(movie.budget / 1000000).toFixed(1)}M` : 'N/A';
@@ -447,7 +462,7 @@ function displayMovieDetails(movie, container) {
             ${cast ? `<div class="details-cast"><h4>🎬 Cast</h4><div class="tag-list">${cast}</div></div>` : ''}
             ${movie.director ? `<div class="details-director"><h4>🎥 Director</h4><p>${movie.director}</p></div>` : ''}
             ${keywords ? `<div class="details-keywords"><h4>🏷️ Keywords</h4><div class="tag-list">${keywords}</div></div>` : ''}
-            ${movie.homepage ? `<div class="details-homepage"><a href="${movie.homepage}" target="_blank" class="btn btn-secondary">🌐 Visit Official Website</a></div>` : ''}
+            ${movie.homepage ? `<div class="details-homepage"><a href="${movie.homepage}" target="_blank" rel="noopener" class="btn btn-secondary" onclick="handleExternalLink(event, '${movie.homepage}')">🌐 Visit Official Website</a><p class="network-note">⚠️ May be blocked on restricted networks</p></div>` : ''}
         </div>
     `;
 }
@@ -575,6 +590,12 @@ function setupScrollToTop() {
     const btn = document.getElementById('scroll-top-btn');
     window.addEventListener('scroll', () => btn.classList.toggle('visible', window.scrollY > 400));
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+// ==================== EXTERNAL LINK HANDLER ====================
+function handleExternalLink(event, url) {
+    // Let the link open normally, but warn if we suspect network blocking
+    console.log('Opening external link:', url);
 }
 
 // ==================== ERROR HANDLING ====================

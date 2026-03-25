@@ -1142,6 +1142,35 @@ body {
     border: none;
     border-radius: 12px;
 }
+.trailer-blocked {
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 2rem;
+    text-align: center;
+    background: var(--bg-light);
+    border-radius: 12px;
+    margin-top: 1rem;
+}
+
+/* ==================== POSTER FALLBACK ==================== */
+.poster-fallback {
+    background-color: var(--bg-light);
+}
+
+/* ==================== NETWORK NOTE ==================== */
+.network-note {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 0.5rem;
+    opacity: 0.7;
+}
+
+/* ==================== DETAILS POSTER FALLBACK ==================== */
+.details-poster[src*="data:image"] {
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+}
 
 /* ==================== STAR RATING ==================== */
 .user-actions {

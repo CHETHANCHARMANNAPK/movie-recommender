@@ -4,6 +4,8 @@ Fetches movie posters, trailers and additional metadata
 """
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import os
 from functools import lru_cache
 from dotenv import load_dotenv
@@ -21,6 +23,16 @@ class TMDBService:
 
     def __init__(self):
         self.session = requests.Session()
+        # Retry on connection errors and 5xx responses
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=0.3,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
         # Load API key at instance creation time (after load_dotenv has run)
         self.API_KEY = os.getenv('TMDB_API_KEY', 'YOUR_API_KEY_HERE')
         if self.API_KEY == 'YOUR_API_KEY_HERE':
@@ -88,8 +100,8 @@ class TMDBService:
         return movie_id
 
     def _get_placeholder_poster(self):
-        """Return placeholder image URL"""
-        return "https://via.placeholder.com/500x750/1a1a1a/ffffff?text=No+Poster"
+        """Return placeholder image URL (inline SVG — works behind firewalls)"""
+        return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='750' viewBox='0 0 500 750'%3E%3Crect width='500' height='750' fill='%231a1a1a'/%3E%3Ctext x='250' y='350' text-anchor='middle' fill='%23666' font-family='Arial' font-size='24'%3ENo Poster Available%3C/text%3E%3Ctext x='250' y='400' text-anchor='middle' fill='%23555' font-family='Arial' font-size='50'%3E🎬%3C/text%3E%3C/svg%3E"
 
     def get_movie_details_from_tmdb(self, movie_id):
         """Get additional movie details from TMDB"""

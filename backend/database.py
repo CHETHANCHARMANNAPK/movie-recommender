@@ -1,8 +1,4 @@
-"""
-Database Module
-Handles SQLite / PostgreSQL connections and queries
-Supports Users, Watchlists, Ratings, and View Tracking
-"""
+
 
 import os
 import hashlib
