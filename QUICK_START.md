@@ -146,6 +146,20 @@ Example:
 pip install -r backend/requirements.txt
 ```
 
+### Table already exists error (SQLite)
+If you see an error like `table users already exists` when starting the backend, you can reset the database by setting the environment variable `RESET_DB=1` before running the server. This will delete the existing `movies.db` file and create a fresh database (for development only).
+
+**Windows:**
+```cmd
+set RESET_DB=1
+python backend\app.py
+```
+**Unix/macOS:**
+```bash
+export RESET_DB=1
+python backend/app.py
+```
+
 ### Frontend can't connect
 - Make sure backend is running at http://localhost:5000
 - Check browser console (F12) for errors

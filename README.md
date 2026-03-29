@@ -237,6 +237,26 @@ Without an API key, placeholder images will be used.
 ### Database Configuration
 By default, SQLite is used. To switch to PostgreSQL:
 
+#### Resetting the SQLite Database (Development)
+If you encounter errors like `table users already exists` or want to start with a fresh database in development, you can automatically delete the SQLite database file on each run:
+
+1. Set the environment variable `RESET_DB=1` before starting the backend server or container.
+2. On startup, the app will delete the existing `movies.db` file and recreate all tables from scratch.
+
+**Example (Windows Command Prompt):**
+```cmd
+set RESET_DB=1
+python backend\app.py
+```
+
+**Example (Unix/macOS Bash):**
+```bash
+export RESET_DB=1
+python backend/app.py
+```
+
+This is useful for development and testing. **Do not use in production** if you want to preserve user data.
+
 1. Update `.env`:
 ```env
 DATABASE_URL=postgresql://user:password@localhost/moviedb
