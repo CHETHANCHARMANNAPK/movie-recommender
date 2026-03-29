@@ -9,6 +9,7 @@ from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 import sys
 import os
+import traceback
 
 # Add backend to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -26,9 +27,20 @@ recommender = MovieRecommender()
 db = Database()
 tmdb = TMDBService()
 
-print("🎬 Loading movie data and building recommendation engine...")
-recommender.load_data()
-print("✅ Recommendation engine ready!")
+engine_ready = False
+engine_error = None
+
+print("🎬 Loading movie data and building recommendation engine...", flush=True)
+try:
+    recommender.load_data()
+    engine_ready = True
+    print("✅ Recommendation engine ready!", flush=True)
+except Exception as _load_exc:
+    engine_error = str(_load_exc)
+    print("❌ Failed to load recommendation engine:", file=sys.stderr, flush=True)
+    traceback.print_exc(file=sys.stderr)
+    sys.stderr.flush()
+    print("⚠️  App will start but movie endpoints will return 503 until data loads.", file=sys.stderr, flush=True)
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────
@@ -40,14 +52,41 @@ def _enrich_posters(movies):
     return movies
 
 
+def _require_engine():
+    """Return a 503 response tuple if the engine is not ready, else None."""
+    if not engine_ready:
+        return jsonify({
+            'success': False,
+            'error': 'Recommendation engine is not available',
+            'detail': engine_error or 'Data loading failed during startup — check logs for the full traceback.',
+        }), 503
+    return None
+
+
 # ─── Health Check ─────────────────────────────────────────────────────
 
 @app.route('/')
 def home():
     return jsonify({
         'status': 'online',
-        'message': 'Movie Recommendation API is running'
+        'message': 'Movie Recommendation API is running',
+        'engine_ready': engine_ready,
     })
+
+
+@app.route('/health')
+def health():
+    """Detailed health check — reports engine initialisation status."""
+    if engine_ready:
+        return jsonify({
+            'status': 'ok',
+            'engine_ready': True,
+        })
+    return jsonify({
+        'status': 'degraded',
+        'engine_ready': False,
+        'error': engine_error or 'Unknown error during data loading',
+    }), 503
 
 
 # ─── Auth Endpoints ──────────────────────────────────────────────────
@@ -110,6 +149,9 @@ def me():
 
 @app.route('/api/movies/popular', methods=['GET'])
 def get_popular_movies():
+    err = _require_engine()
+    if err:
+        return err
     try:
         limit = int(request.args.get('limit', 20))
         offset = int(request.args.get('offset', 0))
@@ -122,6 +164,9 @@ def get_popular_movies():
 
 @app.route('/api/movies/search', methods=['GET'])
 def search_movies():
+    err = _require_engine()
+    if err:
+        return err
     try:
         query = request.args.get('q', '')
         if not query:
@@ -138,6 +183,9 @@ def search_movies():
 @app.route('/api/movies/<int:movie_id>', methods=['GET'])
 @optional_auth
 def get_movie_details(movie_id):
+    err = _require_engine()
+    if err:
+        return err
     try:
         movie = recommender.get_movie_details(movie_id)
         if not movie:
@@ -159,6 +207,9 @@ def get_movie_details(movie_id):
 @app.route('/api/movies/<int:movie_id>/recommendations', methods=['GET'])
 @optional_auth
 def get_recommendations(movie_id):
+    err = _require_engine()
+    if err:
+        return err
     try:
         top_n = int(request.args.get('limit', 10))
 
@@ -183,6 +234,9 @@ def get_recommendations(movie_id):
 
 @app.route('/api/movies/top-rated', methods=['GET'])
 def get_top_rated_movies():
+    err = _require_engine()
+    if err:
+        return err
     try:
         limit = int(request.args.get('limit', 20))
         offset = int(request.args.get('offset', 0))
@@ -197,6 +251,9 @@ def get_top_rated_movies():
 @app.route('/api/movies/filter', methods=['GET'])
 def filter_movies():
     """Advanced filtering endpoint."""
+    err = _require_engine()
+    if err:
+        return err
     try:
         genre = request.args.get('genre')
         min_rating = float(request.args.get('min_rating', 0))
@@ -224,6 +281,9 @@ def filter_movies():
 
 @app.route('/api/genres', methods=['GET'])
 def get_genres():
+    err = _require_engine()
+    if err:
+        return err
     try:
         genres = recommender.get_all_genres()
         return jsonify({'success': True, 'genres': genres})
@@ -235,6 +295,9 @@ def get_genres():
 
 @app.route('/api/movies/<int:movie_id>/trailer', methods=['GET'])
 def get_trailer(movie_id):
+    err = _require_engine()
+    if err:
+        return err
     movie = recommender.get_movie_details(movie_id)
     if not movie:
         return jsonify({'success': False, 'error': 'Movie not found'}), 404
@@ -247,6 +310,9 @@ def get_trailer(movie_id):
 @app.route('/api/watchlist', methods=['GET'])
 @login_required
 def get_watchlist():
+    err = _require_engine()
+    if err:
+        return err
     movie_ids = db.get_watchlist(g.user_id)
     movies = recommender.get_movies_by_ids(movie_ids)
     _enrich_posters(movies)
@@ -292,6 +358,9 @@ def get_my_ratings():
 @app.route('/api/movies/because-you-liked', methods=['GET'])
 @login_required
 def because_you_liked():
+    err = _require_engine()
+    if err:
+        return err
     recent_ids = db.get_recent_views(g.user_id, limit=5)
     if not recent_ids:
         return jsonify({'success': True, 'source_title': None, 'movies': []})
