@@ -113,9 +113,15 @@ class Database:
         db_url = os.getenv('DATABASE_URL', None)
         if db_url is None:
             db_path = os.path.join(os.path.dirname(__file__), '..', 'movies.db')
+            # Optional: auto-delete DB if RESET_DB env var is set (for dev/demo)
+            if os.getenv('RESET_DB', '0') == '1' and os.path.exists(db_path):
+                os.remove(db_path)
             db_url = f'sqlite:///{db_path}'
         self.engine = create_engine(db_url, echo=False)
-        Base.metadata.create_all(self.engine)
+        try:
+            Base.metadata.create_all(self.engine)
+        except Exception as e:
+            print(f"[DB INIT WARNING] {e}")
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
